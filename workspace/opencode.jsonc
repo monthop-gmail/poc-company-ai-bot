@@ -1,7 +1,5 @@
 {
-  // MCP Servers สำหรับ company AI bot
   "mcp": {
-    // Odoo Cloud — stdio transport (installed inside opencode container)
     "odoo": {
       "type": "local",
       "command": "python",
@@ -13,7 +11,6 @@
         "ODOO_PASSWORD": "${ODOO_PASSWORD}"
       }
     },
-    // Company RAG — HTTP transport (separate container)
     "company-rag": {
       "type": "remote",
       "url": "http://rag-mcp:5000/mcp"

@@ -6,4 +6,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY src/ ./src/
 
-ENTRYPOINT ["python", "-m", "pipeline"]
+ENTRYPOINT ["python", "-m", "src.pipeline"]

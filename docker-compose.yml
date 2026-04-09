@@ -74,7 +74,7 @@ services:
       - ./knowledge:/knowledge:ro
       - rag-chroma:/data/chroma
       - rag-bm25:/data/bm25
-    command: ["python", "-m", "pipeline", "ingest", "--source", "all"]
+    command: ["ingest", "--source", "all"]
     restart: "no"
 
   # ──────────────────────────────────────────────
@@ -89,8 +89,9 @@ services:
       - rag-bm25:/data/bm25:ro
     ports:
       - "5000:5000"
+      - "5001:5001"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
       interval: 10s
       timeout: 5s
       retries: 5
