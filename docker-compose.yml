@@ -84,6 +84,7 @@ services:
   # ──────────────────────────────────────────────
   # Local Odoo (สำหรับทดสอบ — profile: local-odoo)
   # ใช้: docker compose --profile local-odoo up -d
+  # Admin login: http://localhost:8069  user=admin  pass=admin
   # แล้วตั้งค่า .env: ODOO_URL=http://odoo-local:8069
   # ──────────────────────────────────────────────
   odoo-db:
@@ -103,6 +104,25 @@ services:
     restart: unless-stopped
     profiles: [local-odoo]
 
+  odoo-init:
+    image: odoo:19
+    container_name: poc-odoo-init
+    environment:
+      - HOST=odoo-db
+      - USER=odoo
+      - PASSWORD=${ODOO_LOCAL_DB_PASSWORD:-odoo}
+    command:
+      - odoo
+      - --database=odoo
+      - --init=base
+      - --without-demo=all
+      - --stop-after-init
+    depends_on:
+      odoo-db:
+        condition: service_healthy
+    restart: "no"
+    profiles: [local-odoo]
+
   odoo-local:
     image: odoo:19
     container_name: poc-odoo-local
@@ -117,6 +137,8 @@ services:
     depends_on:
       odoo-db:
         condition: service_healthy
+      odoo-init:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8069/web/health"]
       interval: 10s
