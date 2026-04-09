@@ -165,7 +165,7 @@ services:
       - ./knowledge:/knowledge:ro
       - rag-chroma:/data/chroma
       - rag-bm25:/data/bm25
-    command: ["ingest", "--source", "all"]
+    command: ["ingest", "--source", "${INGEST_SOURCE:-markdown}"]
     restart: "no"
 
   # ──────────────────────────────────────────────
@@ -176,8 +176,8 @@ services:
       context: ./company-rag/mcp-server
     container_name: poc-rag-mcp
     volumes:
-      - rag-chroma:/data/chroma:ro
-      - rag-bm25:/data/bm25:ro
+      - rag-chroma:/data/chroma
+      - rag-bm25:/data/bm25
     ports:
       - "5000:5000"
     healthcheck:
