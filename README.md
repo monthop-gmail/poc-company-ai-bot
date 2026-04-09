@@ -193,3 +193,29 @@ RAG ใน repo นี้ดัดแปลงมาจาก [legal-th-suite](h
 - [ ] Configurable ChromaDB HTTP client (รองรับ remote vector DB)
 - [ ] Upsert incremental แทน full re-index (ประหยัดเวลา sync)
 - [ ] Direct lookup tool `get_company_doc(id)` สำหรับดึงเอกสารตาม ID โดยตรง
+
+---
+
+## Note: CPU-only PyTorch
+
+`company-rag` ใช้ `sentence-transformers` ซึ่งต้องการ PyTorch
+
+**ทำไมถึงใช้ CPU-only:**
+
+```
+# requirements.txt ทั้ง ingestion และ mcp-server
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch
+```
+
+| | CUDA (default) | CPU-only (เราใช้) |
+|--|---------------|-----------------|
+| Download | ~2.5GB | ~250MB |
+| Image size | ~3GB+ | ~700MB |
+| Build time | 15-20 นาที | 3-5 นาที |
+| ต้องการ GPU | ✅ | ❌ |
+| เหมาะกับ | GPU server | **server ทั่วไป** ✅ |
+
+**Performance บน CPU:** model `multilingual-e5-base` (~278M params) ใช้ CPU ได้สบาย latency ~100-300ms ต่อ query — เพียงพอสำหรับ LINE bot ปกติ
+
+**ถ้ามี GPU:** ลบ `--extra-index-url` และ `torch` ออก ให้ `sentence-transformers` ดึง dependency เองตามปกติ
