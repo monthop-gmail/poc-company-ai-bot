@@ -219,3 +219,29 @@ torch
 **Performance บน CPU:** model `multilingual-e5-base` (~278M params) ใช้ CPU ได้สบาย latency ~100-300ms ต่อ query — เพียงพอสำหรับ LINE bot ปกติ
 
 **ถ้ามี GPU:** ลบ `--extra-index-url` และ `torch` ออก ให้ `sentence-transformers` ดึง dependency เองตามปกติ
+
+---
+
+## Note: RAG ทำงานเมื่อไหร่
+
+`sentence-transformers` (embedding + reranking) ถูกใช้ **2 ที่**:
+
+### 1. Ingestion — รันครั้งเดียว
+```
+knowledge/*.md + Odoo data → embed ทุก chunk → ChromaDB
+```
+รันตอน setup หรือเมื่ออัปเดต knowledge base เท่านั้น
+
+### 2. MCP server — ทุกครั้งที่ user ถาม
+```
+user ถาม → embed query → ค้น ChromaDB → BM25 → RRF → rerank → ส่งให้ LLM
+```
+
+**ไม่ช้า เพราะ lazy singleton** — model โหลดครั้งแรกครั้งเดียว แล้ว cache ตลอด container
+
+| | cold start (ครั้งแรก) | ครั้งถัดไป |
+|--|----------------------|-----------|
+| Load model | ~5-10 วินาที | ข้ามไป |
+| Embed query | ~100-300ms | ~100-300ms |
+| Rerank | ~50-100ms | ~50-100ms |
+| **รวม** | **~10 วินาที** | **~200-400ms** |
