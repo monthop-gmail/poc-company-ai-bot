@@ -19,12 +19,41 @@ LINE OA → bot-service (Bun + OpenCode)
 
 ---
 
-## Setup ใหม่สำหรับบริษัท
+## Quick Start (Local Testing — ไม่ต้องมี LINE/Cloudflare)
+
+ทดสอบ RAG + Odoo MCP ได้เลยบน local ก่อนมี credentials จริง:
+
+```bash
+# 1. Clone
+git clone https://github.com/monthop-gmail/poc-company-ai-bot my-bot
+cd my-bot
+git submodule update --init
+
+# 2. Copy .env
+cp .env.example .env
+# แก้แค่ OPENCODE_PASSWORD ถ้าต้องการ (default: changeme)
+
+# 3. รัน (Local Odoo + ทุก service)
+docker compose --profile local-odoo up -d --build
+```
+
+พร้อมแล้ว:
+- OpenCode API: `http://localhost:4096` (Basic auth `opencode:changeme`)
+- Local Odoo: `http://localhost:8069` (admin / admin)
+- RAG health: `http://localhost:5000/health`
+- Odoo MCP health: `http://localhost:8000/health`
+
+> **AI model ฟรี** — ใช้ `opencode/big-pickle` ผ่าน OpenCode Zen ไม่ต้องใส่ API key ใดๆ
+
+---
+
+## Setup สำหรับบริษัท (Production)
 
 ### 1. Clone repo
 ```bash
 git clone https://github.com/monthop-gmail/poc-company-ai-bot <ชื่อบริษัท>-bot
 cd <ชื่อบริษัท>-bot
+git submodule update --init
 ```
 
 ### 2. ไฟล์ที่ต้องแก้ (checklist)
@@ -50,7 +79,7 @@ LINE_CHANNEL_ACCESS_TOKEN=
 LINE_CHANNEL_SECRET=
 LINE_OA_URL=
 
-# Odoo Cloud
+# Odoo Cloud (หรือดู Local Odoo section ถ้าทดสอบ local)
 ODOO_URL=https://yourcompany.odoo.com
 ODOO_DB=yourdb
 ODOO_USERNAME=admin
@@ -60,7 +89,7 @@ ODOO_PASSWORD=your_api_key     # Settings → Technical → API Keys
 CLOUDFLARE_TUNNEL_TOKEN=
 ```
 
-> API keys อื่น (ANTHROPIC_API_KEY ฯลฯ) ไม่บังคับ — default model ฟรีผ่าน OpenCode Zen
+> **ไม่ต้องใส่ API key** — default model `big-pickle` ฟรีผ่าน OpenCode Zen
 
 ### 4. ใส่ข้อมูลบริษัทใน knowledge/
 แก้ไฟล์ `knowledge/*.md` ให้ตรงกับบริษัท
@@ -74,7 +103,7 @@ docker compose up -d --build
 ```
 
 ระบบจะ:
-1. Ingest `knowledge/*.md` + sync ข้อมูลจาก Odoo → ChromaDB
+1. Ingest `knowledge/*.md` → ChromaDB + BM25
 2. Start rag-mcp + odoo-mcp
 3. Start OpenCode + LINE bot
 
@@ -120,31 +149,31 @@ docker compose up -d --build
 
 ใช้สำหรับทีมที่ยังไม่มี Odoo Cloud หรือต้องการทดสอบ flow ครบก่อน deploy จริง
 
-### เปิด Local Odoo
+### เปิด Local Odoo (พร้อมใช้งานทันที)
 
 ```bash
 docker compose --profile local-odoo up -d
 ```
 
-### ตั้งค่าครั้งแรก
+ระบบจะ:
+1. Start PostgreSQL → Init Odoo 19 schema อัตโนมัติ (`odoo-init`)
+2. Start Odoo 19 → พร้อมที่ **http://localhost:8069** (`admin` / `admin`)
 
-1. เปิด browser: **http://localhost:8069**
-2. สร้าง database:
-   - Database Name: `odoo`
-   - Email: `admin@example.com`
-   - Password: `admin`
-   - Language: Thai (ถ้ามี)
-3. แก้ `.env`:
-   ```env
-   ODOO_URL=http://odoo-local:8069
-   ODOO_DB=odoo
-   ODOO_USERNAME=admin
-   ODOO_PASSWORD=admin
-   ```
-4. Restart odoo-mcp:
-   ```bash
-   docker compose up -d --no-deps odoo-mcp
-   ```
+> ไม่ต้องสร้าง database เองผ่าน browser — `odoo-init` จัดการให้ครบ
+
+### ตั้งค่า .env สำหรับ local
+
+```env
+ODOO_URL=http://odoo-local:8069
+ODOO_DB=odoo
+ODOO_USERNAME=admin
+ODOO_PASSWORD=admin
+```
+
+แล้ว restart odoo-mcp:
+```bash
+docker compose up -d --no-deps odoo-mcp
+```
 
 ### ทดสอบ connection
 
