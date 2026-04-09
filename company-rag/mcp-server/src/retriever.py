@@ -89,17 +89,25 @@ def _reciprocal_rank_fusion(
     return [docs[doc_id] for doc_id, _ in ranked]
 
 
-def search(query: str, top_k: int = RERANK_TOP_K) -> list[dict]:
-    """Hybrid search: vector + BM25 + rerank"""
+def search(query: str, top_k: int = RERANK_TOP_K, topic_filter: str | None = None) -> list[dict]:
+    """Hybrid search: vector + BM25 + rerank
+
+    Args:
+        query: คำค้นหา
+        top_k: จำนวนผลลัพธ์สูงสุด
+        topic_filter: กรองเฉพาะ topic เช่น "สินค้าและบริการ", "นโยบาย" (None = ทุก topic)
+    """
     # Vector search
     model = _get_embedding_model()
     query_embedding = model.encode(f"query: {query}", normalize_embeddings=True)
 
     collection = _get_collection()
+    where = {"topic": topic_filter} if topic_filter else None
     vector_res = collection.query(
         query_embeddings=[query_embedding.tolist()],
         n_results=min(VECTOR_SEARCH_TOP_K, collection.count()),
         include=["documents", "metadatas", "distances"],
+        where=where,
     )
     vector_docs = [
         {
@@ -119,18 +127,23 @@ def search(query: str, top_k: int = RERANK_TOP_K) -> list[dict]:
     bm25_scores = bm25.get_scores(tokenized_query)
     top_indices = sorted(range(len(bm25_scores)), key=lambda i: bm25_scores[i], reverse=True)[:BM25_SEARCH_TOP_K]
 
-    bm25_docs = [
-        {
-            "id": f"chunk_{i}",
-            "content": corpus[i]["content"],
-            "metadata": {
-                "source": corpus[i]["source"],
-                "heading": corpus[i]["heading"],
-                "topic": corpus[i]["topic"],
-            },
-        }
-        for i in top_indices if bm25_scores[i] > 0
-    ]
+    bm25_docs = []
+    for i in top_indices:
+        if bm25_scores[i] <= 0:
+            continue
+        item = corpus[i]
+        # type safety: รองรับทั้ง dict และ string (ป้องกัน schema drift)
+        if isinstance(item, dict):
+            content = item.get("content", str(item))
+            meta = {
+                "source": item.get("source", ""),
+                "heading": item.get("heading", ""),
+                "topic": item.get("topic", ""),
+            }
+        else:
+            content = str(item)
+            meta = {"source": "", "heading": "", "topic": ""}
+        bm25_docs.append({"id": f"chunk_{i}", "content": content, "metadata": meta})
 
     # RRF fusion
     fused = _reciprocal_rank_fusion(vector_docs, bm25_docs)

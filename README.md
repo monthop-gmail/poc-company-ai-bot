@@ -158,3 +158,38 @@ docker compose logs -f opencode      # OpenCode engine
 docker compose logs -f rag-mcp       # RAG server
 docker compose logs -f odoo-mcp      # Odoo MCP
 ```
+
+---
+
+## RAG: เทียบกับ legal-th-suite (ต้นแบบ)
+
+RAG ใน repo นี้ดัดแปลงมาจาก [legal-th-suite](https://github.com/monthop-gmail/legal-th-suite)
+
+### สิ่งที่เหมือนกัน (core pipeline)
+
+| ส่วน | ทั้งสอง |
+|------|---------|
+| Embedding | `intfloat/multilingual-e5-base` + prefix "passage:"/"query:" |
+| Vector DB | ChromaDB persistent |
+| Keyword | BM25 + pythainlp tokenizer |
+| Fusion | Reciprocal Rank Fusion (RRF) |
+| Reranker | `cross-encoder/ms-marco-MiniLM-L-6-v2` |
+| Model loading | Lazy singleton (โหลดครั้งเดียว) |
+
+### สิ่งที่เปลี่ยน
+
+| ส่วน | legal-th-suite | company-rag |
+|------|---------------|-------------|
+| Chunking | 1 มาตรา = 1 chunk (Thai law regex) | 1 heading = 1 chunk (markdown split) |
+| Data source | ตัวบทกฎหมายไทย | Markdown files + Odoo Cloud |
+| MCP transport | stdio | streamable-http (Docker-friendly) |
+| MCP tools | 3 (statute lookup, search, glossary) | 2 (search, list_topics) |
+| Re-index | Upsert incremental | Delete + recreate (simpler) |
+| Topic filter | มี | มี (`topic_filter` param ใน `search_company_info`) |
+| Metadata | law_id, section_number, elements, cross_refs | source, source_type, heading, topic |
+
+### Roadmap (ปรับปรุงที่ยังค้างอยู่)
+
+- [ ] Configurable ChromaDB HTTP client (รองรับ remote vector DB)
+- [ ] Upsert incremental แทน full re-index (ประหยัดเวลา sync)
+- [ ] Direct lookup tool `get_company_doc(id)` สำหรับดึงเอกสารตาม ID โดยตรง

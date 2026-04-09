@@ -22,18 +22,21 @@ mcp = FastMCP("company-rag")
 
 
 @mcp.tool()
-def search_company_info(query: str) -> list[dict]:
+def search_company_info(query: str, topic_filter: str | None = None) -> list[dict]:
     """
     ค้นหาข้อมูลบริษัท สินค้า บริการ FAQ และนโยบาย
 
     Args:
         query: คำค้นหา เช่น "ราคาสินค้า", "นโยบายคืนสินค้า", "บริษัททำอะไร"
+        topic_filter: กรองเฉพาะ topic เช่น "สินค้าและบริการ", "นโยบาย", "คำถามที่พบบ่อย"
+                      ดู topics ที่มีทั้งหมดได้จาก list_knowledge_topics()
+                      None = ค้นหาทุก topic
 
     Returns:
         รายการผลลัพธ์ที่เกี่ยวข้อง พร้อม heading, topic และ content
     """
     from .retriever import search
-    results = search(query)
+    results = search(query, topic_filter=topic_filter)
     if not results:
         return [{"content": "ไม่พบข้อมูลที่เกี่ยวข้อง", "heading": "", "topic": "", "source": ""}]
     return results
