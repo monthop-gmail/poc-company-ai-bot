@@ -29,6 +29,8 @@ services:
     depends_on:
       rag-mcp:
         condition: service_healthy
+      odoo-mcp:
+        condition: service_healthy
     restart: unless-stopped
 
   line-bot:
@@ -55,6 +57,28 @@ services:
     command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
     depends_on:
       - line-bot
+    restart: unless-stopped
+
+  # ──────────────────────────────────────────────
+  # Odoo MCP Server (streamable HTTP)
+  # ──────────────────────────────────────────────
+  odoo-mcp:
+    build:
+      context: ./odoo-mcp
+    container_name: poc-odoo-mcp
+    environment:
+      - ODOO_URL=${ODOO_URL}
+      - ODOO_DB=${ODOO_DB}
+      - ODOO_USERNAME=${ODOO_USERNAME}
+      - ODOO_PASSWORD=${ODOO_PASSWORD}
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     restart: unless-stopped
 
   # ──────────────────────────────────────────────

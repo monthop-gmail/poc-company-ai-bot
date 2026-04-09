@@ -1,15 +1,8 @@
 {
   "mcp": {
     "odoo": {
-      "type": "local",
-      "command": "python",
-      "args": ["-m", "odoo_mcp.server"],
-      "env": {
-        "ODOO_URL": "${ODOO_URL}",
-        "ODOO_DB": "${ODOO_DB}",
-        "ODOO_USERNAME": "${ODOO_USERNAME}",
-        "ODOO_PASSWORD": "${ODOO_PASSWORD}"
-      }
+      "type": "remote",
+      "url": "http://odoo-mcp:8000/mcp"
     },
     "company-rag": {
       "type": "remote",
