@@ -331,7 +331,7 @@ if [[ "$FAIL" -gt 0 ]]; then
   echo ""
   echo "Tips สำหรับ failures:"
   echo "  • Container ไม่ start  → docker compose --profile local-odoo up -d --build"
-  echo "  • ChromaDB error       → docker compose run --rm rag-ingestion"
+  echo "  • ChromaDB error       → docker compose run --rm rag-ingestion && docker compose restart rag-mcp"
   echo "  • Odoo connection fail → ตรวจ ODOO_URL/ODOO_DB/ODOO_USERNAME/ODOO_PASSWORD ใน .env"
   echo "  • OpenCode auth fail   → ตรวจ OPENCODE_PASSWORD ใน .env"
   exit 1
