@@ -111,6 +111,61 @@ docker compose up -d --build
 | rag-mcp | 5000 | RAG search MCP server |
 | odoo-mcp | 8000 | Odoo MCP server |
 | cloudflared | — | Cloudflare tunnel |
+| **odoo-local** *(profile)* | **8069** | **Local Odoo 19 สำหรับทดสอบ** |
+| odoo-db *(profile)* | — | PostgreSQL 15 (ใช้กับ odoo-local) |
+
+---
+
+## Local Odoo (สำหรับทดสอบ)
+
+ใช้สำหรับทีมที่ยังไม่มี Odoo Cloud หรือต้องการทดสอบ flow ครบก่อน deploy จริง
+
+### เปิด Local Odoo
+
+```bash
+docker compose --profile local-odoo up -d
+```
+
+### ตั้งค่าครั้งแรก
+
+1. เปิด browser: **http://localhost:8069**
+2. สร้าง database:
+   - Database Name: `odoo`
+   - Email: `admin@example.com`
+   - Password: `admin`
+   - Language: Thai (ถ้ามี)
+3. แก้ `.env`:
+   ```env
+   ODOO_URL=http://odoo-local:8069
+   ODOO_DB=odoo
+   ODOO_USERNAME=admin
+   ODOO_PASSWORD=admin
+   ```
+4. Restart odoo-mcp:
+   ```bash
+   docker compose up -d --no-deps odoo-mcp
+   ```
+
+### ทดสอบ connection
+
+```bash
+# health ของ odoo-mcp (ชี้ไป local odoo แล้ว)
+curl http://localhost:8000/health
+
+# ทดสอบ MCP tool โดยตรง
+curl -sL -X POST http://localhost:8000/mcp/ \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'
+```
+
+### หยุด Local Odoo
+
+```bash
+docker compose --profile local-odoo down
+# ถ้าต้องการลบข้อมูลด้วย:
+docker compose --profile local-odoo down -v
+```
 
 ---
 

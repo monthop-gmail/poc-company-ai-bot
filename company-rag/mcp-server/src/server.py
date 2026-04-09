@@ -2,18 +2,18 @@
 Company RAG MCP Server
 FastMCP server exposing 2 tools: search_company_info, list_knowledge_topics
 
-Health check: GET http://localhost:5001/health (background thread)
-MCP endpoint: http://localhost:5000/mcp (FastMCP streamable-http)
+Health check: GET http://localhost:5000/health (ผ่าน custom_route)
+MCP endpoint: http://localhost:5000/mcp
 """
-
-from __future__ import annotations
 
 import argparse
 import logging
-import threading
-from http.server import BaseHTTPRequestHandler, HTTPServer
+from typing import Optional
 
+import uvicorn
 from mcp.server.fastmcp import FastMCP
+from starlette.requests import Request
+from starlette.responses import PlainTextResponse
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -22,7 +22,7 @@ mcp = FastMCP("company-rag")
 
 
 @mcp.tool()
-def search_company_info(query: str, topic_filter: str | None = None) -> list[dict]:
+def search_company_info(query: str, topic_filter: Optional[str] = None) -> list:
     """
     ค้นหาข้อมูลบริษัท สินค้า บริการ FAQ และนโยบาย
 
@@ -43,7 +43,7 @@ def search_company_info(query: str, topic_filter: str | None = None) -> list[dic
 
 
 @mcp.tool()
-def list_knowledge_topics() -> list[str]:
+def list_knowledge_topics() -> list:
     """
     ดูรายการหัวข้อที่มีข้อมูลอยู่ใน knowledge base
 
@@ -54,43 +54,20 @@ def list_knowledge_topics() -> list[str]:
     return list_topics()
 
 
-def _start_health_server(port: int = 5001) -> None:
-    """Health check server บน port แยก — ไม่ยุ่งกับ FastMCP internals"""
-    class HealthHandler(BaseHTTPRequestHandler):
-        def do_GET(self):
-            if self.path == "/health":
-                self.send_response(200)
-                self.send_header("Content-Type", "text/plain")
-                self.end_headers()
-                self.wfile.write(b"ok")
-            else:
-                self.send_response(404)
-                self.end_headers()
-
-        def log_message(self, *args):
-            pass  # ปิด access log ไม่ให้รก
-
-    server = HTTPServer(("0.0.0.0", port), HealthHandler)
-    logger.info("Health server started on port %d", port)
-    server.serve_forever()
+@mcp.custom_route("/health", methods=["GET"])
+async def health_check(request: Request) -> PlainTextResponse:
+    return PlainTextResponse("ok")
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", default="0.0.0.0")
     parser.add_argument("--port", type=int, default=5000)
-    parser.add_argument("--health-port", type=int, default=5001)
     args = parser.parse_args()
 
-    # Start health check server in background thread
-    threading.Thread(
-        target=_start_health_server,
-        args=(args.health_port,),
-        daemon=True,
-    ).start()
-
     logger.info("Starting company-rag MCP server on %s:%d", args.host, args.port)
-    mcp.run(transport="streamable-http", host=args.host, port=args.port)
+    app = mcp.streamable_http_app()
+    uvicorn.run(app, host=args.host, port=args.port)
 
 
 if __name__ == "__main__":

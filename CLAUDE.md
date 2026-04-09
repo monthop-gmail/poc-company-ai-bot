@@ -29,9 +29,10 @@ docker-compose.yml   orchestrate ทุก services
 |---------|------|-----------|
 | line-bot | 3000 | HTTP |
 | opencode | 4096 | HTTP REST |
-| rag-mcp | 5000 | MCP streamable-http |
-| rag health | 5001 | HTTP (background thread) |
+| rag-mcp | 5000 | MCP streamable-http + health |
 | odoo-mcp | 8000 | MCP streamable-http |
+| odoo-local *(profile)* | 8069 | HTTP (local test only) |
+| odoo-db *(profile)* | — | PostgreSQL internal |
 
 ## การ Ingest ข้อมูล
 
@@ -77,8 +78,11 @@ git submodule update --remote odoo-mcp
 ## Common Commands
 
 ```bash
-# รัน / rebuild
+# รัน / rebuild (production — ใช้ Odoo Cloud)
 docker compose up -d --build
+
+# รัน Local Odoo สำหรับทดสอบ
+docker compose --profile local-odoo up -d
 
 # ดู logs
 docker compose logs -f [service]
@@ -87,9 +91,23 @@ docker compose logs -f [service]
 docker compose up -d --build rag-mcp
 
 # check health
-curl http://localhost:5001/health   # rag-mcp
+curl http://localhost:5000/health   # rag-mcp
 curl http://localhost:8000/health   # odoo-mcp
+curl http://localhost:8069/web/health  # local odoo (profile เท่านั้น)
 ```
+
+## Local Odoo สำหรับทดสอบ
+
+1. เปิดใช้ profile: `docker compose --profile local-odoo up -d`
+2. เปิด browser: `http://localhost:8069` — สร้าง database ชื่อ **`odoo`**
+3. แก้ `.env`:
+   ```
+   ODOO_URL=http://odoo-local:8069
+   ODOO_DB=odoo
+   ODOO_USERNAME=admin
+   ODOO_PASSWORD=admin
+   ```
+4. Restart odoo-mcp: `docker compose up -d --no-deps odoo-mcp`
 
 ## Known Limitations
 
