@@ -1,0 +1,107 @@
+services:
+  # ──────────────────────────────────────────────
+  # LINE Bot + OpenCode engine
+  # ──────────────────────────────────────────────
+  opencode:
+    build:
+      context: ./bot-service
+      dockerfile: Dockerfile.opencode
+    container_name: poc-bot-server
+    environment:
+      - OPENCODE_SERVER_PASSWORD=${OPENCODE_PASSWORD:-changeme}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+      - QWEN_API_KEY=${QWEN_API_KEY:-}
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
+      - ODOO_URL=${ODOO_URL:-}
+      - ODOO_DB=${ODOO_DB:-}
+      - ODOO_USERNAME=${ODOO_USERNAME:-}
+      - ODOO_PASSWORD=${ODOO_PASSWORD:-}
+    volumes:
+      - ./workspace:/workspace
+      - poc-bot-data:/root/.local/share/opencode
+      - poc-bot-state:/root/.local/state/opencode
+      - ./bot-service/opencode.json:/root/.config/opencode/opencode.json:ro
+    working_dir: /workspace
+    command: ["serve", "--hostname=0.0.0.0", "--port=4096"]
+    depends_on:
+      rag-mcp:
+        condition: service_healthy
+    restart: unless-stopped
+
+  line-bot:
+    build:
+      context: ./bot-service
+      dockerfile: Dockerfile
+    container_name: poc-bot-line-bot
+    environment:
+      - LINE_CHANNEL_ACCESS_TOKEN=${LINE_CHANNEL_ACCESS_TOKEN}
+      - LINE_CHANNEL_SECRET=${LINE_CHANNEL_SECRET}
+      - PORT=3000
+      - OPENCODE_URL=http://opencode:4096
+      - OPENCODE_PASSWORD=${OPENCODE_PASSWORD:-changeme}
+      - OPENCODE_DIR=/workspace
+      - LINE_OA_URL=${LINE_OA_URL:-}
+      - PROMPT_TIMEOUT_MS=${PROMPT_TIMEOUT_MS:-120000}
+    depends_on:
+      - opencode
+    restart: unless-stopped
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: poc-bot-tunnel
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    depends_on:
+      - line-bot
+    restart: unless-stopped
+
+  # ──────────────────────────────────────────────
+  # Company RAG — ingestion (one-shot)
+  # ──────────────────────────────────────────────
+  rag-ingestion:
+    build:
+      context: ./company-rag/ingestion
+    container_name: poc-rag-ingestion
+    environment:
+      - ODOO_URL=${ODOO_URL:-}
+      - ODOO_DB=${ODOO_DB:-}
+      - ODOO_USERNAME=${ODOO_USERNAME:-}
+      - ODOO_PASSWORD=${ODOO_PASSWORD:-}
+      - ODOO_SYNC_MODELS=${ODOO_SYNC_MODELS:-product.template}
+    volumes:
+      - ./knowledge:/knowledge:ro
+      - rag-chroma:/data/chroma
+      - rag-bm25:/data/bm25
+    command: ["python", "-m", "pipeline", "ingest", "--source", "all"]
+    restart: "no"
+
+  # ──────────────────────────────────────────────
+  # Company RAG — MCP server (always-on)
+  # ──────────────────────────────────────────────
+  rag-mcp:
+    build:
+      context: ./company-rag/mcp-server
+    container_name: poc-rag-mcp
+    volumes:
+      - rag-chroma:/data/chroma:ro
+      - rag-bm25:/data/bm25:ro
+    ports:
+      - "5000:5000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    depends_on:
+      rag-ingestion:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+volumes:
+  poc-bot-data:
+  poc-bot-state:
+  rag-chroma:
+  rag-bm25:

@@ -1,0 +1,62 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "anthropic": {},
+    "openai": {},
+    "google": {
+      "npm": "@ai-sdk/google",
+      "name": "Google",
+      "options": {
+        "apiKey": "{env:GOOGLE_API_KEY}"
+      },
+      "models": {
+        "gemini-3-pro-preview": { "name": "Gemini 3 Pro" },
+        "gemini-3.1-pro-preview": { "name": "Gemini 3.1 Pro" },
+        "gemini-3-flash-preview": { "name": "Gemini 3 Flash" },
+        "gemini-3.1-pro-preview-customtools": { "name": "Gemini 3.1 Pro CustomTools" }
+      }
+    },
+    "qwen": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Qwen",
+      "options": {
+        "baseURL": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+        "apiKey": "{env:QWEN_API_KEY}"
+      },
+      "models": {
+        "qwen3.5-plus": { "name": "Qwen3.5 Plus (1M)" },
+        "qwen3.5-397b-a17b": { "name": "Qwen3.5 397B" },
+        "qwen-plus": { "name": "Qwen Plus" },
+        "qwen3-coder-plus": { "name": "Qwen3 Coder Plus" },
+        "qwen-turbo": { "name": "Qwen Turbo" }
+      }
+    },
+    "deepseek": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "DeepSeek",
+      "options": {
+        "baseURL": "https://api.deepseek.com/v1",
+        "apiKey": "{env:DEEPSEEK_API_KEY}"
+      },
+      "models": {
+        "deepseek-chat": {
+          "name": "DeepSeek Chat"
+        },
+        "deepseek-reasoner": {
+          "name": "DeepSeek Reasoner"
+        }
+      }
+    },
+    "groq": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Groq",
+      "options": {
+        "baseURL": "https://api.groq.com/openai/v1",
+        "apiKey": "{env:GROQ_API_KEY}"
+      },
+      "models": {
+        "moonshotai/kimi-k2-instruct-0905": { "name": "Kimi K2 (128K)" }
+      }
+    }
+  }
+}

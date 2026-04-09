@@ -1,0 +1,11 @@
+FROM ghcr.io/anomalyco/opencode:latest
+
+RUN apk add --no-cache git curl jq github-cli nodejs npm python3 py3-pip && \
+    git config --global user.name "OpenCode" && \
+    git config --global user.email "opencode@bot" && \
+    git config --global credential.helper '!f() { echo "username=x-access-token"; echo "password=${GITHUB_TOKEN}"; }; f' && \
+    pip install --break-system-packages "mcp>=1.0,<1.10" "git+https://github.com/monthop-gmail/odoo-mcp-claude.git"
+
+# Pre-configure default model to Big Pickle (free via OpenCode Zen)
+RUN mkdir -p /root/.local/state/opencode && \
+    echo '{"recent":[{"providerID":"opencode","modelID":"big-pickle"}]}' > /root/.local/state/opencode/model.json

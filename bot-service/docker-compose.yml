@@ -1,0 +1,57 @@
+services:
+  # OpenCode server with Claude (Anthropic) provider
+  opencode:
+    build:
+      context: .
+      dockerfile: Dockerfile.opencode
+    container_name: poc-bot-server
+    environment:
+      - OPENCODE_SERVER_PASSWORD=${OPENCODE_PASSWORD:-changeme}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+      - QWEN_API_KEY=${QWEN_API_KEY:-}
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
+      - ODOO_URL=${ODOO_URL:-}
+      - ODOO_DB=${ODOO_DB:-}
+      - ODOO_USERNAME=${ODOO_USERNAME:-}
+      - ODOO_PASSWORD=${ODOO_PASSWORD:-}
+    volumes:
+      - ${PROJECT_DIR:-./workspace}:/workspace
+      - poc-bot-data:/root/.local/share/opencode
+      - poc-bot-state:/root/.local/state/opencode
+      - ./opencode.json:/root/.config/opencode/opencode.json:ro
+    working_dir: /workspace
+    command: ["serve", "--hostname=0.0.0.0", "--port=4096"]
+    restart: unless-stopped
+
+  # LINE bot - bridges LINE messages to OpenCode (Claude)
+  line-bot:
+    build: .
+    container_name: poc-bot-line-bot
+    environment:
+      - LINE_CHANNEL_ACCESS_TOKEN=${LINE_CHANNEL_ACCESS_TOKEN}
+      - LINE_CHANNEL_SECRET=${LINE_CHANNEL_SECRET}
+      - PORT=3000
+      - OPENCODE_URL=http://opencode:4096
+      - OPENCODE_PASSWORD=${OPENCODE_PASSWORD:-changeme}
+      - OPENCODE_DIR=/workspace
+      - LINE_OA_URL=${LINE_OA_URL:-}
+      - PROMPT_TIMEOUT_MS=${PROMPT_TIMEOUT_MS:-120000}
+    depends_on:
+      - opencode
+    restart: unless-stopped
+
+  # Cloudflare tunnel - exposes LINE webhook to internet
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: poc-bot-tunnel
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    depends_on:
+      - line-bot
+    restart: unless-stopped
+
+volumes:
+  poc-bot-data:
+  poc-bot-state:

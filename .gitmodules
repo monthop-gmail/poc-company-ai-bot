@@ -1,0 +1,3 @@
+[submodule "odoo-mcp"]
+	path = odoo-mcp
+	url = https://github.com/monthop-gmail/odoo-mcp-claude
