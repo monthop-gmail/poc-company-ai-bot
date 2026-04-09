@@ -18,9 +18,9 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-ok()   { echo -e "  ${GREEN}✓${NC} $1"; ((PASS++)); }
-fail() { echo -e "  ${RED}✗${NC} $1"; ((FAIL++)); }
-skip() { echo -e "  ${YELLOW}~${NC} $1 (skipped)"; ((SKIP++)); }
+ok()   { echo -e "  ${GREEN}✓${NC} $1"; ((PASS++)) || true; }
+fail() { echo -e "  ${RED}✗${NC} $1"; ((FAIL++)) || true; }
+skip() { echo -e "  ${YELLOW}~${NC} $1 (skipped)"; ((SKIP++)) || true; }
 info() { echo -e "  ${BLUE}→${NC} $1"; }
 section() { echo -e "\n${BLUE}══ $1 ══${NC}"; }
 
@@ -211,7 +211,8 @@ else
     2>/dev/null || echo "")
 
   if echo "$ODOO_VER" | grep -q "server_version"; then
-    ODOO_VER_STR=$(echo "$ODOO_VER" | grep -o '"server_version":"[^"]*"' | cut -d'"' -f4 || echo "?")
+    ODOO_VER_STR=$(echo "$ODOO_VER" | grep -oE 'server_version[^0-9]+[0-9]+\.[0-9]+-[0-9]+' | grep -oE '[0-9]+\.[0-9]+-[0-9]+' || \
+      echo "$ODOO_VER" | grep -oE 'server_version[^0-9]+[0-9]+\.[0-9]+' | grep -oE '[0-9]+\.[0-9]+' || echo "?")
     ok "odoo_version — Odoo ${ODOO_VER_STR} (${ODOO_URL})"
   else
     fail "odoo_version — cannot connect to Odoo at ${ODOO_URL}"

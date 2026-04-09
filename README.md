@@ -45,6 +45,29 @@ docker compose --profile local-odoo up -d --build
 
 > **AI model ฟรี** — ใช้ `opencode/big-pickle` ผ่าน OpenCode Zen ไม่ต้องใส่ API key ใดๆ
 
+### ทดสอบหลัง start
+
+```bash
+bash scripts/test-local.sh
+```
+
+ผลลัพธ์ที่ควรได้:
+```
+══ 1. Container Health ══
+  ✓ poc-rag-mcp — healthy
+  ✓ poc-odoo-mcp — healthy
+  ✓ poc-bot-server — up (no healthcheck)
+  ✓ poc-odoo-local — healthy
+  ✓ poc-odoo-db — healthy
+...
+══════════════════════════════════════
+ Results: 22 passed  0 failed  4 skipped
+══════════════════════════════════════
+พร้อมส่งให้ทีมทดสอบ!
+```
+
+> 4 skipped คือ knowledge/*.md ที่ยังเป็น placeholder (about.md, faq.md, policies.md) และ LINE bot — ปกติในช่วงทดสอบ local
+
 ---
 
 ## Setup สำหรับบริษัท (Production)
@@ -106,6 +129,13 @@ docker compose up -d --build
 1. Ingest `knowledge/*.md` → ChromaDB + BM25
 2. Start rag-mcp + odoo-mcp
 3. Start OpenCode + LINE bot
+
+### 7. ทดสอบ (optional แต่แนะนำ)
+```bash
+bash scripts/test-local.sh
+```
+
+ตรวจสอบว่าทุก service ทำงานถูกต้อง ก่อน connect LINE จริง
 
 ---
 
