@@ -68,6 +68,26 @@ bash scripts/test-local.sh
 
 > 4 skipped คือ knowledge/*.md ที่ยังเป็น placeholder (about.md, faq.md, policies.md) และ LINE bot — ปกติในช่วงทดสอบ local
 
+### ทดสอบ Odoo Ingestion (optional)
+
+ถ้าต้องการทดสอบ RAG ด้วยข้อมูลสินค้าจริงจาก Odoo:
+
+```bash
+# 1. ติดตั้ง sale module + สร้าง demo products (รันครั้งเดียว)
+python3 scripts/setup-odoo-demo.py
+
+# 2. Ingest ทั้ง markdown + Odoo products
+INGEST_SOURCE=all docker compose run --rm rag-ingestion
+
+# 3. Restart rag-mcp เพื่อโหลด collection ใหม่
+docker compose restart rag-mcp
+
+# 4. ทดสอบอีกครั้ง — ควรได้ 22 passed, 0 failed
+bash scripts/test-local.sh
+```
+
+`setup-odoo-demo.py` จะสร้าง 8 สินค้าตัวอย่าง (ERP, POS, HR, Training, Hardware) พร้อม description และราคาภาษาไทย ให้ทดสอบ RAG ได้ทันที
+
 ---
 
 ## Setup สำหรับบริษัท (Production)
