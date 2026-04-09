@@ -90,7 +90,7 @@ services:
     image: postgres:15-alpine
     container_name: poc-odoo-db
     environment:
-      - POSTGRES_DB=odoo
+      - POSTGRES_DB=postgres
       - POSTGRES_USER=odoo
       - POSTGRES_PASSWORD=${ODOO_LOCAL_DB_PASSWORD:-odoo}
     volumes:
