@@ -25,6 +25,8 @@ services:
       - poc-bot-data:/root/.local/share/opencode
       - poc-bot-state:/root/.local/state/opencode
       - ./bot-service/opencode.json:/root/.config/opencode/opencode.json:ro
+    ports:
+      - "4096:4096"
     working_dir: /workspace
     command: ["serve", "--hostname=0.0.0.0", "--port=4096"]
     depends_on:
